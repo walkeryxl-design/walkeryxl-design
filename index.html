@@ -1,0 +1,722 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>境外旅游小程序交互原型</title>
+  <style>
+    :root {
+      --ink: #101713;
+      --muted: #667872;
+      --deep: #173d35;
+      --green: #4aa88d;
+      --mint: #dff7ef;
+      --sand: #fff0d2;
+      --orange: #f0b052;
+      --blue: #3e8f98;
+      --paper: #fffaf0;
+      --line: #d9e6df;
+      --shadow: 0 24px 70px rgba(32, 56, 48, .16);
+      --radius: 26px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background:
+        radial-gradient(circle at 14% 10%, rgba(240, 176, 82, .28), transparent 28%),
+        radial-gradient(circle at 90% 8%, rgba(74, 168, 141, .24), transparent 28%),
+        linear-gradient(135deg, #f3faf4 0%, #fff4df 50%, #edf8f6 100%);
+    }
+    button, input, select, textarea { font: inherit; }
+    button { cursor: pointer; border: 0; }
+    .shell { display: grid; grid-template-columns: 270px minmax(0, 1fr); min-height: 100vh; }
+    .sidebar {
+      position: sticky; top: 0; height: 100vh; padding: 24px 18px;
+      background: rgba(255, 250, 240, .84); backdrop-filter: blur(24px);
+      border-right: 1px solid rgba(23, 61, 53, .12);
+      box-shadow: 10px 0 40px rgba(32, 56, 48, .06);
+      z-index: 3;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+    .logo {
+      width: 46px; height: 46px; border-radius: 16px;
+      background: linear-gradient(135deg, #4aa88d, #f0b052);
+      display: grid; place-items: center; overflow: hidden;
+      box-shadow: 0 16px 35px rgba(74, 168, 141, .25);
+    }
+    .logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .brand h1 { margin: 0; font-size: 18px; letter-spacing: .2px; }
+    .brand p { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
+    .nav-title { color: var(--muted); font-size: 12px; margin: 20px 10px 8px; letter-spacing: 1.4px; }
+    .nav button {
+      width: 100%; display: flex; align-items: center; gap: 10px;
+      color: #203830; background: transparent; padding: 12px 12px; border-radius: 16px;
+      margin-bottom: 6px; text-align: left; transition: .2s ease;
+    }
+    .nav button:hover, .nav button.active { background: #203830; color: #fff; transform: translateX(3px); }
+    .nav button span:first-child { width: 26px; height: 26px; border-radius: 10px; display: grid; place-items: center; background: rgba(74,168,141,.14); }
+    .nav button.active span:first-child, .nav button:hover span:first-child { background: rgba(255,255,255,.16); }
+    .side-card {
+      margin-top: 22px; padding: 16px; border-radius: 20px; background: #203830; color: #fff;
+      background-image: linear-gradient(135deg, #203830, #4aa88d);
+    }
+    .side-card b { display: block; margin-bottom: 6px; }
+    .side-card p { margin: 0 0 12px; color: rgba(255,255,255,.78); font-size: 12px; }
+    .side-card button { background: #fff; color: #203830; border-radius: 999px; padding: 9px 12px; font-weight: 700; }
+    main { padding: 28px; min-width: 0; }
+    .topbar { display: flex; justify-content: space-between; gap: 16px; align-items: center; margin-bottom: 24px; }
+    .topbar h2 { margin: 0; font-size: clamp(26px, 4vw, 44px); letter-spacing: -1.2px; }
+    .topbar p { margin: 8px 0 0; color: var(--muted); max-width: 780px; }
+    .chips { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+    .chip { padding: 9px 12px; border-radius: 999px; background: rgba(255,255,255,.75); border: 1px solid rgba(15,61,50,.12); font-size: 12px; color: #28443d; }
+    .view { display: none; animation: rise .35s ease both; }
+    .view.active { display: block; }
+    @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+    .grid { display: grid; gap: 18px; }
+    .grid.cols-2 { grid-template-columns: minmax(0, 1.05fr) minmax(360px, .95fr); }
+    .grid.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .card { background: rgba(255, 250, 240, .9); border: 1px solid rgba(23,61,53,.11); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
+    .card h3 { margin: 0 0 12px; font-size: 20px; }
+    .card small { color: var(--muted); }
+    .hero { position: relative; overflow: hidden; min-height: 260px; background: linear-gradient(135deg, #203830, #4aa88d 58%, #f0b052); color: #fff; }
+    .hero:after { content: ""; position: absolute; width: 360px; height: 360px; border-radius: 50%; right: -120px; top: -80px; background: rgba(255,255,255,.15); }
+    .hero h3 { font-size: clamp(26px, 4vw, 46px); line-height: 1.04; max-width: 620px; }
+    .hero p { color: rgba(255,255,255,.82); max-width: 660px; }
+    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
+    .btn { border-radius: 999px; padding: 11px 16px; font-weight: 800; background: #203830; color: #fff; box-shadow: 0 10px 22px rgba(32, 56, 48, .18); }
+    .btn.orange { background: var(--orange); color: #23180b; }
+    .btn.light { background: #fff; color: #203830; }
+    .btn.ghost { background: rgba(32,56,48,.08); color: #203830; box-shadow: none; border: 1px solid rgba(32,56,48,.12); }
+    .phone-wrap { display: grid; place-items: center; }
+    .phone {
+      width: 390px; max-width: 100%; height: 760px; border: 12px solid #101713; border-radius: 44px;
+      background: #f8fbf7; box-shadow: 0 32px 90px rgba(12, 45, 36, .25); overflow: hidden; position: relative;
+    }
+    .phone-top { height: 42px; background: #101713; color: white; display: flex; justify-content: space-between; align-items: center; padding: 0 18px; font-size: 12px; }
+    .app-screen { height: calc(100% - 42px); overflow: auto; padding: 16px; }
+    .app-hero { padding: 18px; border-radius: 26px; background: linear-gradient(135deg, #4aa88d, #376357); color: white; margin-bottom: 14px; }
+    .app-hero h4 { margin: 6px 0; font-size: 25px; }
+    .search { background: #fff; border-radius: 16px; padding: 11px 13px; color: #7a8a84; box-shadow: 0 6px 20px rgba(32,56,48,.08); }
+    .dest-row { display: flex; gap: 8px; overflow-x: auto; padding: 5px 0 12px; }
+    .pill { white-space: nowrap; border-radius: 999px; padding: 8px 11px; background: #fff; border: 1px solid var(--line); color: #376357; font-size: 12px; }
+    .pill.active { background: #203830; color: #fff; }
+    .product { background: #fff; border-radius: 22px; padding: 12px; margin-bottom: 12px; box-shadow: 0 8px 25px rgba(32,56,48,.08); }
+    .product-img { height: 118px; border-radius: 18px; background: linear-gradient(135deg, #ffd39b, #73d5b6); display: flex; align-items: flex-end; padding: 13px; color: #fff; font-weight: 900; text-shadow: 0 1px 10px rgba(0,0,0,.25); }
+    .product h5 { margin: 10px 0 4px; font-size: 16px; }
+    .meta { display: flex; justify-content: space-between; gap: 8px; align-items: center; color: var(--muted); font-size: 12px; }
+    .price { color: #d88920; font-size: 18px; font-weight: 900; }
+    .tabbar { position: sticky; bottom: 0; display: grid; grid-template-columns: repeat(4,1fr); background: rgba(255,255,255,.92); backdrop-filter: blur(12px); margin: 12px -16px -16px; padding: 8px; border-top: 1px solid var(--line); }
+    .tabbar button { background: transparent; padding: 8px 4px; border-radius: 14px; color: #657a72; font-size: 12px; }
+    .tabbar button.active { background: #e7f7f1; color: #4aa88d; font-weight: 800; }
+    .detail-cover { height: 190px; border-radius: 24px; background: linear-gradient(135deg, #153f34, #ff9f5a); color: white; padding: 18px; display: flex; align-items: flex-end; }
+    .info-line { display: flex; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid var(--line); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
+    .field { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 10px; }
+    .field label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+    .field input, .field select { width: 100%; border: 0; outline: none; background: transparent; color: var(--ink); }
+    .status { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; background: #e7f7f1; color: #087c57; font-weight: 800; font-size: 12px; }
+    .status.warn { background: #fff0d2; color: #bd5b00; }
+    .status.blue { background: #e8f0ff; color: #3e8f98; }
+    .table { width: 100%; border-collapse: collapse; overflow: hidden; border-radius: 18px; font-size: 13px; }
+    .table th { text-align: left; color: #5e716b; background: #eef8f3; padding: 12px; font-weight: 800; }
+    .table td { padding: 13px 12px; border-top: 1px solid var(--line); }
+    .table tr:hover td { background: #fff4df; }
+    .metric-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 14px; margin-bottom: 18px; }
+    .metric { background: #fff; border-radius: 22px; padding: 18px; border: 1px solid var(--line); }
+    .metric b { font-size: 25px; display: block; margin-top: 7px; }
+    .kanban { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 14px; }
+    .lane { background: rgba(255,255,255,.68); border: 1px dashed rgba(32,56,48,.22); border-radius: 24px; padding: 14px; min-height: 320px; }
+    .lane h4 { margin: 0 0 12px; }
+    .ticket { background: #fff; border-radius: 18px; padding: 13px; margin-bottom: 10px; box-shadow: 0 8px 22px rgba(12,45,36,.07); }
+    .ticket b { display: block; margin-bottom: 6px; }
+    .quote-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 16px; }
+    .quote { background: #fff; border-radius: 26px; padding: 22px; border: 1px solid var(--line); position: relative; overflow: hidden; }
+    .quote.featured { border: 2px solid var(--orange); transform: translateY(-6px); box-shadow: var(--shadow); }
+    .quote h3 { margin-bottom: 6px; }
+    .quote .money { font-size: 30px; font-weight: 900; color: #d88920; margin: 14px 0; }
+    .quote ul { padding-left: 18px; color: #3c5f54; }
+    .drawer { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
+    .drawer .shade { position: absolute; inset: 0; background: rgba(0,0,0,.28); opacity: 0; transition: .2s; }
+    .drawer-panel { position: absolute; right: 18px; top: 18px; bottom: 18px; width: min(520px, calc(100vw - 36px)); background: #fffaf0; border-radius: 30px; padding: 24px; box-shadow: 0 30px 100px rgba(0,0,0,.25); transform: translateX(110%); transition: .28s ease; overflow: auto; }
+    .drawer.open { pointer-events: auto; }
+    .drawer.open .shade { opacity: 1; }
+    .drawer.open .drawer-panel { transform: translateX(0); }
+    .consumer-guide {
+      position: fixed; right: 22px; bottom: 86px; width: min(420px, calc(100vw - 44px));
+      background: #fffaf0; border: 1px solid rgba(23,61,53,.16); border-radius: 26px;
+      box-shadow: 0 28px 80px rgba(32,56,48,.22); padding: 18px; z-index: 12;
+      transform: translateY(18px); opacity: 0; pointer-events: none; transition: .25s ease;
+    }
+    .consumer-guide.show { transform: translateY(0); opacity: 1; pointer-events: auto; }
+    .consumer-guide h3 { margin: 0 0 6px; }
+    .consumer-guide p { margin: 0 0 12px; color: var(--muted); }
+    .consumer-progress { height: 8px; background: #e4eee8; border-radius: 999px; overflow: hidden; margin: 12px 0; }
+    .consumer-progress span { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #4aa88d, #f0b052); transition: .25s; }
+    .consumer-steps { display: grid; gap: 8px; margin-top: 12px; }
+    .consumer-steps button { text-align: left; border-radius: 16px; padding: 10px; background: #fff; border: 1px solid var(--line); }
+    .consumer-steps button.active { border-color: var(--orange); background: #fff0d2; }
+    .toast { position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 90px); padding: 12px 16px; background: #203830; color: #fff; border-radius: 999px; box-shadow: var(--shadow); z-index: 20; opacity: 0; transition: .25s; }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    @media (max-width: 1050px) {
+      .shell { grid-template-columns: 1fr; }
+      .sidebar { position: relative; height: auto; }
+      .nav { display: grid; grid-template-columns: repeat(2,1fr); gap: 8px; }
+      .grid.cols-2, .grid.cols-3, .metric-grid, .kanban, .quote-grid { grid-template-columns: 1fr; }
+      .topbar { display: block; }
+      .chips { justify-content: flex-start; margin-top: 12px; }
+    }
+
+    .order-tabs { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 12px; }
+    .order-card { background: #fff; border-radius: 22px; padding: 13px; margin-bottom: 12px; box-shadow: 0 8px 25px rgba(32,56,48,.08); border: 1px solid #edf3ef; }
+    .order-head { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; margin-bottom: 8px; }
+    .order-actions { display: flex; gap: 8px; margin-top: 12px; }
+    .order-actions .btn { padding: 9px 11px; font-size: 12px; flex: 1; }
+    .progress { display: grid; gap: 10px; margin: 12px 0; }
+    .step { display: grid; grid-template-columns: 24px 1fr; gap: 9px; align-items: start; color: #6c7d77; }
+    .dot { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: #e5eee9; color: #597069; font-size: 12px; font-weight: 900; }
+    .step.done .dot { background: #4aa88d; color: #fff; }
+    .step.now .dot { background: #f0b052; color: #281407; }
+    .step b { display: block; color: #203830; }
+    .voucher-box { border-radius: 24px; padding: 18px; background: #fff; text-align: center; border: 1px dashed #9eb7ae; }
+    .qr { width: 154px; height: 154px; margin: 12px auto; border-radius: 18px; background: conic-gradient(from 90deg, #101713 0 25%, #fff 0 50%, #101713 0 75%, #fff 0); border: 12px solid #fff; box-shadow: inset 0 0 0 8px #101713, 0 10px 28px rgba(12,45,36,.12); }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo"><img src="xxxx-b2f5-79a31cb4c2ed.png" alt="境外旅游 logo"></div>
+        <div><h1>境外旅游原型</h1><p>可点击交互 · MVP 流程</p></div>
+      </div>
+      <div class="nav-title">系统入口</div>
+      <nav class="nav" id="mainNav">
+        <button class="active" data-route="overview"><span>◎</span><span>方案总览</span></button>
+        <button data-route="mini-home"><span>小</span><span>用户端小程序</span></button>
+        <button data-route="admin"><span>管</span><span>平台运营端</span></button>
+        <button data-route="supplier"><span>供</span><span>供应商端</span></button>
+        <button data-route="quote"><span>价</span><span>报价方案</span></button>
+      </nav>
+      <div class="side-card">
+        <b>推荐首期</b>
+        <p>B 版 35-45 万：上线收款 + 人工确认 + 凭证发放。</p>
+        <button data-route="quote" onclick="navigate('quote')">查看报价</button>
+      </div>
+    </aside>
+
+    <main>
+      <div class="topbar">
+        <div><h2 id="pageTitle">境外旅游系统总览</h2><p id="pageDesc">把用户端、运营后台、供应商协同、订单履约和报价方案串成一套可点击原型。</p></div>
+        <div class="chips"><span class="chip">微信小程序优先</span><span class="chip">后台人工履约</span><span class="chip">境外跟团/门票/玩乐</span></div>
+      </div>
+
+      <section class="view active" id="view-overview">
+        <div class="grid cols-2">
+          <div class="card hero">
+            <h3>境外旅游产品，从咨询到支付到凭证发放</h3>
+            <p>首期主线：境外跟团、当地玩乐、境外门票、自由行套餐。系统先做人工确认履约，后续再升级供应商 API、签证材料、电子合同和财务对账。</p>
+            <div class="hero-actions">
+              <button data-route="mini-home" class="btn light" onclick="navigate('mini-home')">体验小程序</button>
+              <button data-route="admin" class="btn orange" onclick="navigate('admin')">查看后台</button>
+            </div>
+          </div>
+          <div class="card">
+            <h3>核心闭环</h3>
+            <div class="ticket"><b>1. 用户报名</b><small>目的地 → 产品详情 → 选择日期 → 填游客资料 → 微信支付</small></div>
+            <div class="ticket"><b>2. 后台确认</b><small>运营联系境外供应商 → 确认资源 → 上传确认单/二维码/PDF</small></div>
+            <div class="ticket"><b>3. 用户出行</b><small>小程序查看凭证和出团通知 → 出行完成 → 退款/售后</small></div>
+          </div>
+        </div>
+        <div class="metric-grid" style="margin-top:18px">
+          <div class="metric"><small>首期推荐</small><b>B 版</b><small>35-45 万可控</small></div>
+          <div class="metric"><small>正式运营</small><b>C 版</b><small>65-75 万更稳</small></div>
+          <div class="metric"><small>主推品类</small><b>4 类</b><small>跟团/门票/玩乐/套餐</small></div>
+          <div class="metric"><small>履约方式</small><b>人工</b><small>先跑通再自动化</small></div>
+        </div>
+
+        <div class="card" style="margin-top:18px">
+          <h3>体验模式</h3>
+          <p>这是一个可体验的静态网站，不需要后端即可模拟用户端流程、运营端流程、供应商流程。</p>
+          <div class="grid" style="grid-template-columns:repeat(3,1fr);gap:10px">
+            <button class="btn ghost" onclick="setExperienceMode('user')">用户端流程</button>
+            <button class="btn ghost" onclick="setExperienceMode('admin')">运营端流程</button>
+            <button class="btn ghost" onclick="setExperienceMode('supplier')">供应商流程</button>
+          </div>
+          <div class="grid" style="grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px">
+            <button class="pill" onclick="applyProductFilter('亲子')">筛选结果：亲子</button>
+            <button class="pill" onclick="fillDemoTraveler()">一键填入示例游客</button>
+            <button class="pill" onclick="openDrawer('生成咨询报价', '已生成日本亲子 6 日游报价单，可进入咨询记录确认报价并下单。')">生成咨询报价</button>
+            <button class="pill" onclick="resetPrototype()">重置体验</button>
+          </div>
+          <p><b>体验完成度：</b>已覆盖首页、目的地、列表、详情、咨询、下单、订单、凭证、退款、后台履约、供应商确认、签证材料和优惠券。</p>
+          <p><b>静态体验说明：</b>所有交互均在前端本地模拟，适合给老板、客户和开发人员演示流程。</p>
+        </div>
+
+        <div class="card" style="margin-top:18px">
+          <h3>一键演示模式</h3>
+          <p>优先按“我是消费者”的视角体验：选目的地、看产品、下单支付、等系统确认、最后查看出行凭证。</p>
+          <div class="hero-actions">
+            <button class="btn orange" onclick="startConsumerDemo()">我是消费者，开始体验</button>
+            <button class="btn ghost" onclick="nextConsumerStep()">消费者下一步</button>
+          </div>
+          <h4>消费者演示步骤</h4>
+          <div class="grid" style="grid-template-columns:repeat(3,1fr);gap:10px">
+            <div class="ticket"><b>第 1 步：浏览目的地</b><small>从用户端首页看日本、东京、亲子玩法。</small></div>
+            <div class="ticket"><b>第 2 步：查看产品列表</b><small>筛选门票、一日游、中文服务。</small></div>
+            <div class="ticket"><b>第 3 步：查看产品详情</b><small>确认日期、费用包含、退改规则。</small></div>
+            <div class="ticket"><b>第 4 步：填写资料并支付</b><small>填写游客护照资料并模拟微信支付。</small></div>
+            <div class="ticket"><b>第 5 步：查看我的订单</b><small>订单进入待确认/待出行进度。</small></div>
+            <div class="ticket"><b>第 6 步：查看出行凭证</b><small>系统正在确认资源，供应商已上传凭证后，消费者查看二维码/PDF。</small></div>
+          </div>
+          <p><b>消费者体验完成：</b>这条线只站在消费者视角，后台确认和供应商上传会作为系统提示自动发生，不打断用户体验。</p>
+          <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
+          <p>如果要给开发评审，可再看完整履约脚本：浏览产品 → 提交订单 → 后台确认 → 上传凭证 → 查看凭证。</p>
+          <div class="hero-actions">
+            <button class="btn orange" onclick="startGuidedDemo()">开始自动演示</button>
+            <button class="btn ghost" onclick="nextDemoStep()">下一步演示</button>
+          </div>
+          <h4>演示步骤</h4>
+          <div id="demoSteps" class="grid" style="grid-template-columns:repeat(5,1fr);gap:10px"></div>
+        </div>
+        <div class="grid cols-3">
+          <div class="card"><h3>境外跟团</h3><p>班期、成人价、儿童价、单房差、出团通知、游客名单。</p><button class="btn ghost" onclick="openDrawer('境外跟团游', '支持直接报名、预约咨询、展示引流三种模式。')">查看说明</button></div>
+          <div class="card"><h3>当地玩乐</h3><p>接送机、包车、一日游、潜水、滑雪、演出、旅拍体验。</p><button class="btn ghost" onclick="openDrawer('当地玩乐', '适合高毛利和目的地碎片化产品，首期通过人工确认。')">查看说明</button></div>
+          <div class="card"><h3>境外门票</h3><p>景点、乐园、演出票、展馆票，支持 PDF/二维码/文本码。</p><button class="btn ghost" onclick="openDrawer('境外门票', '首期后台上传凭证，后续对接供应商自动出票。')">查看说明</button></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-mini-home">
+        <div class="grid cols-2">
+          <div class="phone-wrap"><div class="phone"><div class="phone-top"><span>9:41</span><span>境外旅行</span><span>●●●</span></div><div class="app-screen">
+            <div class="app-hero"><small>五一 / 暑期预售</small><h4>去世界另一边，先把行程订好</h4><div class="search">搜索目的地、门票、当地玩乐</div></div>
+            <div class="dest-row"><button class="pill active">东京</button><button class="pill">大阪</button><button class="pill">曼谷</button><button class="pill">普吉</button><button class="pill">巴黎</button><button class="pill">新加坡</button></div>
+            <div class="product" onclick="navigate('product-detail')"><div class="product-img">东京迪士尼 1 日票 + 接送</div><h5>东京亲子当地玩乐套餐</h5><div class="meta"><span>即时确认 · 中文客服</span><span class="price">¥899 起</span></div></div>
+            <div class="product" onclick="navigate('product-detail')"><div class="product-img" style="background:linear-gradient(135deg,#6bb7ff,#ffb36b)">普吉岛出海一日游</div><h5>皇帝岛珊瑚岛双岛出海</h5><div class="meta"><span>可预约 · 含接送</span><span class="price">¥499 起</span></div></div>
+            <div class="product"><div class="product-img" style="background:linear-gradient(135deg,#3e8f98,#f0b052)">欧洲 10 日跟团</div><h5>法瑞意经典四星跟团游</h5><div class="meta"><span>班期库存 12 位</span><span class="price">¥12999 起</span></div></div>
+            <div class="tabbar"><button data-route="mini-home" class="active" onclick="navigate('mini-home')">首页</button><button data-route="destinations" onclick="navigate('destinations')">目的地</button><button data-route="user-orders" onclick="navigate('user-orders')">订单</button><button data-route="profile" onclick="navigate('profile')">我的</button></div>
+          </div></div></div>
+          <div class="card"><h3>小程序端页面结构</h3><table class="table"><tr><th>页面</th><th>关键交互</th></tr><tr><td>首页</td><td>搜索、目的地、Banner、推荐产品</td></tr><tr><td>列表</td><td>目的地/日期/价格/品类筛选</td></tr><tr><td>详情</td><td>行程、费用、退改、凭证说明、立即报名</td></tr><tr><td>下单</td><td>游客资料、护照、联系人、支付</td></tr><tr><td>订单</td><td>待确认、已确认、查看凭证、退款</td></tr></table><h3>用户端页面地图</h3><div class="grid" style="grid-template-columns:repeat(2,1fr);gap:8px"><button data-route="destinations" class="pill" onclick="navigate('destinations')">目的地首页</button><button data-route="destination-detail" class="pill" onclick="navigate('destination-detail')">目的地详情</button><button data-route="product-list" class="pill" onclick="navigate('product-list')">产品列表页</button><button data-route="product-detail" class="pill" onclick="navigate('product-detail')">产品详情</button><button data-route="consultation" class="pill" onclick="navigate('consultation')">预约咨询页</button><button data-route="checkout" class="pill" onclick="navigate('checkout')">下单支付</button><button data-route="user-orders" class="pill" onclick="navigate('user-orders')">我的订单</button><button data-route="user-order-detail" class="pill" onclick="navigate('user-order-detail')">订单详情</button><button data-route="travel-voucher" class="pill" onclick="navigate('travel-voucher')">出行凭证</button><button data-route="traveler-docs" class="pill" onclick="navigate('traveler-docs')">常用游客</button><button data-route="consultation-record" class="pill" onclick="navigate('consultation-record')">咨询记录</button><button data-route="refund-request" class="pill" onclick="navigate('refund-request')">退款申请</button><button data-route="visa-materials" class="pill" onclick="navigate('visa-materials')">签证材料</button><button data-route="coupon-center" class="pill" onclick="navigate('coupon-center')">活动优惠券</button><button data-route="profile" class="pill" onclick="navigate('profile')">我的首页</button></div></div>
+        </div>
+      </section>
+
+
+      <section class="view" id="view-destinations">
+        <div class="grid cols-2">
+          <div class="phone-wrap"><div class="phone"><div class="phone-top"><span>9:41</span><span>目的地</span><span>搜索</span></div><div class="app-screen">
+            <h3>目的地首页</h3><div class="search">搜索目的地 / 国家 / 城市 / 景点</div>
+            <h4>热门目的地</h4><div class="dest-row"><button data-route="destination-detail" class="pill active" onclick="navigate('destination-detail')">日本</button><button class="pill">泰国</button><button class="pill">新加坡</button><button class="pill">马来西亚</button><button class="pill">欧洲</button></div>
+            <h4>玩法主题</h4><div class="grid" style="grid-template-columns:repeat(2,1fr);gap:8px"><button class="pill">亲子乐园</button><button class="pill">海岛度假</button><button class="pill">当地参团</button><button class="pill">接送机/包车</button><button class="pill">滑雪温泉</button><button class="pill">演出票</button></div>
+            <h4>推荐目的地</h4><div class="order-card" onclick="navigate('destination-detail')"><div class="order-head"><div><b>日本 · 东京</b><br><small>迪士尼 / 富士山 / 镰仓 / 箱根</small></div><span class="price">¥499 起</span></div><button data-route="product-list" class="btn ghost" style="width:100%" onclick="navigate('product-list')">查看产品</button></div>
+            <div class="order-card"><div class="order-head"><div><b>泰国 · 普吉岛</b><br><small>出海 / 潜水 / 包车 / 接送机</small></div><span class="price">¥299 起</span></div></div>
+            <h4>全部目的地</h4><div class="order-card"><b>亚洲</b><p>日本 · 韩国 · 泰国 · 新加坡 · 马来西亚 · 印尼</p><b>欧洲</b><p>法国 · 瑞士 · 意大利 · 西班牙 · 英国</p><b>大洋洲</b><p>澳大利亚 · 新西兰</p></div>
+            <div class="tabbar"><button data-route="mini-home" onclick="navigate('mini-home')">首页</button><button class="active">目的地</button><button data-route="user-orders" onclick="navigate('user-orders')">订单</button><button data-route="profile" onclick="navigate('profile')">我的</button></div>
+          </div></div></div>
+          <div class="card"><h3>目的地 Tab 设计</h3><p>目的地页面负责帮助用户从“想去哪”和“想怎么玩”两个方向进入商品列表。</p><table class="table"><tr><th>模块</th><th>作用</th></tr><tr><td>搜索</td><td>搜国家、城市、景点、玩法</td></tr><tr><td>热门目的地</td><td>承接高转化国家和城市</td></tr><tr><td>玩法主题</td><td>亲子、海岛、当地参团、接送机等</td></tr><tr><td>全部目的地</td><td>按亚洲、欧洲、大洋洲分组</td></tr></table></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-destination-detail">
+        <div class="grid cols-2">
+          <div class="phone-wrap"><div class="phone"><div class="phone-top"><span>9:41</span><span>东京</span><span>分享</span></div><div class="app-screen">
+            <div class="detail-cover"><h4>日本 · 东京</h4></div><h3>东京目的地详情</h3><p>迪士尼 / 富士山 / 镰仓 / 箱根温泉 / 成田接送</p>
+            <div class="dest-row"><button class="pill active">全部</button><button class="pill">门票</button><button class="pill">一日游</button><button class="pill">包车</button><button class="pill">亲子</button></div>
+            <div class="product" onclick="navigate('product-detail')"><div class="product-img">东京迪士尼 1 日票 + 接送</div><h5>东京亲子当地玩乐套餐</h5><div class="meta"><span>可订明日 · 中文客服</span><span class="price">¥899 起</span></div></div>
+            <div class="product"><div class="product-img" style="background:linear-gradient(135deg,#87ceeb,#345e44)">富士山河口湖一日游</div><h5>富士山河口湖中文一日游</h5><div class="meta"><span>含集合接送</span><span class="price">¥499 起</span></div></div>
+            <div class="order-card"><b>出行攻略</b><p>东京适合几天？迪士尼怎么买票？东京亲子怎么玩？</p></div>
+            <div class="tabbar"><button data-route="mini-home" onclick="navigate('mini-home')">首页</button><button data-route="destinations" class="active" onclick="navigate('destinations')">目的地</button><button data-route="user-orders" onclick="navigate('user-orders')">订单</button><button data-route="profile" onclick="navigate('profile')">我的</button></div>
+          </div></div></div>
+          <div class="card"><h3>目的地详情页</h3><p>承接目的地首页点击后进入，聚合该目的地下的门票、玩乐、跟团和攻略内容。</p><div class="ticket"><b>推荐玩法</b><small>门票 / 一日游 / 包车 / 接送机 / 亲子。</small></div><div class="ticket"><b>产品列表</b><small>按日期、价格、玩法、中文服务筛选。</small></div></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-profile">
+        <div class="grid cols-2">
+          <div class="phone-wrap"><div class="phone"><div class="phone-top"><span>9:41</span><span>我的</span><span>设置</span></div><div class="app-screen">
+            <h3>我的首页</h3><div class="app-hero"><small>微信用户</small><h4>138****0000</h4><p>完善护照资料，下单更快。</p><button class="btn light" onclick="openDrawer('护照资料', '可维护中文名、英文姓、英文名、护照号、有效期和国籍。')">完善出行资料</button></div>
+            <div class="order-card"><b>我的订单</b><div class="grid" style="grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px"><button class="pill">待支付</button><button data-route="user-orders" class="pill" onclick="navigate('user-orders')">待确认</button><button data-route="travel-voucher" class="pill" onclick="navigate('travel-voucher')">待出行</button><button class="pill">退款/售后</button></div></div>
+            <h4>我的工具</h4><div class="grid" style="grid-template-columns:repeat(2,1fr);gap:8px"><button class="pill" onclick="openDrawer('常用游客', '张三 / ZHANG SAN，护照号 E123****678，有效期 2030-08-01。')">常用游客</button><button class="pill" onclick="openDrawer('护照资料', '护照、港澳通行证、台湾通行证、身份证和签证材料预留。')">护照资料</button><button data-route="travel-voucher" class="pill" onclick="navigate('travel-voucher')">我的凭证</button><button class="pill">优惠券</button><button class="pill">收藏产品</button><button class="pill">浏览记录</button><button class="pill" onclick="openDrawer('咨询记录', '日本亲子 6 日游：客服跟进中；欧洲小包团：已报价。')">咨询记录</button><button class="pill">联系客服</button></div>
+            <h4>我的服务</h4><div class="order-card"><div class="info-line"><span>在线客服</span><b>09:00-22:00</b></div><div class="info-line"><span>境外紧急联系</span><b>24 小时</b></div><div class="info-line"><span>退款售后</span><b>按退改规则审核</b></div><div class="info-line"><span>平台规则</span><b>查看</b></div></div>
+            <div class="tabbar"><button data-route="mini-home" onclick="navigate('mini-home')">首页</button><button data-route="destinations" onclick="navigate('destinations')">目的地</button><button data-route="user-orders" onclick="navigate('user-orders')">订单</button><button class="active">我的</button></div>
+          </div></div></div>
+          <div class="card"><h3>我的 Tab 设计</h3><p>我的页面负责用户资料、资产、客服和售后。境外旅游要特别突出常用游客、护照资料、我的凭证和咨询记录。</p><table class="table"><tr><th>入口</th><th>用途</th></tr><tr><td>常用游客</td><td>维护护照和英文名，下单复用</td></tr><tr><td>我的凭证</td><td>临出行快速找二维码/PDF</td></tr><tr><td>咨询记录</td><td>查看客服跟进和报价</td></tr><tr><td>境外紧急联系</td><td>出行中问题快速联系</td></tr></table></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-product-detail">
+        <div class="grid cols-2">
+          <div class="phone-wrap"><div class="phone"><div class="phone-top"><span>9:41</span><span>产品详情</span><span>···</span></div><div class="app-screen">
+            <div class="detail-cover"><h4>东京亲子当地玩乐套餐</h4></div>
+            <h3 style="margin:14px 0 6px">东京迪士尼 1 日票 + 市区接送</h3><div class="meta"><span>产品编号 JP-TYO-001</span><span class="price">¥899 起</span></div>
+            <div class="info-line"><span>可选日期</span><b>2026-06-18</b></div><div class="info-line"><span>费用包含</span><b>门票 + 接送 + 中文客服</b></div><div class="info-line"><span>确认方式</span><b>后台人工确认</b></div>
+            <h4>行程亮点</h4><p>适合亲子家庭，含往返接送，凭电子二维码入园，出行前一天发送确认单。</p>
+            <button data-route="checkout" class="btn orange" style="width:100%;margin-top:16px" onclick="navigate('checkout')">立即报名</button><button class="btn ghost" style="width:100%;margin-top:10px" onclick="openDrawer('预约咨询', '已生成咨询单：客服将跟进目的地、人数、预算和特殊需求。')">先咨询</button>
+          </div></div></div>
+          <div class="card"><h3>详情页信息架构</h3><div class="ticket"><b>核心信息</b><small>标题、目的地、价格、班期、库存、确认方式、退改规则。</small></div><div class="ticket"><b>境外资料</b><small>英文地址、集合地点、当地时间、护照/英文名要求。</small></div><div class="ticket"><b>转化按钮</b><small>立即报名、预约咨询、联系客服、收藏、分享。</small></div><button data-route="checkout" class="btn" onclick="navigate('checkout')">模拟下单</button></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-checkout">
+        <div class="grid cols-2">
+          <div class="phone-wrap"><div class="phone"><div class="phone-top"><span>9:41</span><span>确认订单</span><span>¥</span></div><div class="app-screen">
+            <h3>填写报名资料</h3><div class="product"><b>东京迪士尼 1 日票 + 接送</b><div class="meta"><span>2026-06-18 · 2 成人 1 儿童</span><span class="price">¥2697</span></div></div>
+            <div class="form-row"><div class="field"><label>英文姓</label><input value="ZHANG"></div><div class="field"><label>英文名</label><input value="SAN"></div></div>
+            <div class="field"><label>护照号</label><input value="E12345678"></div><div class="field"><label>联系人手机</label><input value="13800000000"></div><div class="field"><label>特殊需求</label><input value="儿童餐、靠近新宿接送点"></div>
+            <div class="info-line"><span>商品金额</span><b>¥2697</b></div><div class="info-line"><span>新人券</span><b>-¥80</b></div><div class="info-line"><span>实付</span><b class="price">¥2617</b></div>
+            <button class="btn orange" style="width:100%;margin-top:16px" onclick="payOrder()">微信支付</button>
+          </div></div></div>
+          <div class="card"><h3>下单页交互点</h3><table class="table"><tr><th>区域</th><th>说明</th></tr><tr><td>游客资料</td><td>护照号、英文名、出生日期、证件有效期</td></tr><tr><td>价格</td><td>销售价、优惠券、实付金额、成本价后台不可见给用户</td></tr><tr><td>订单</td><td>支付后进入待确认，后台确认后发凭证</td></tr></table><button class="btn" onclick="payOrder()">模拟支付成功</button></div>
+        </div>
+      </section>
+
+
+      <section class="view" id="view-user-orders">
+        <div class="grid cols-2">
+          <div class="phone-wrap"><div class="phone"><div class="phone-top"><span>9:41</span><span>我的订单</span><span>筛选</span></div><div class="app-screen">
+            <h3>我的订单</h3>
+            <div class="order-tabs"><button class="pill active">全部</button><button class="pill">待支付</button><button class="pill">待确认</button><button class="pill">待出行</button><button class="pill">已完成</button><button class="pill">退款/售后</button></div>
+            <div class="order-card"><div class="order-head"><div><b>东京迪士尼 1 日票 + 市区接送</b><br><small>出行日期：2026-06-18 · 2 成人 1 儿童</small></div><span class="status warn">待确认</span></div><div class="meta"><span>平台正在确认境外资源，预计 2 小时内确认</span><span class="price">¥2617</span></div><div class="order-actions"><button data-route="user-order-detail" class="btn ghost" onclick="navigate('user-order-detail')">查看详情</button><button class="btn ghost" onclick="openDrawer('联系客服', '已进入订单客服咨询，可补充酒店地址、接送点或儿童餐需求。')">联系客服</button></div></div>
+            <div class="order-card"><div class="order-head"><div><b>普吉岛皇帝岛出海一日游</b><br><small>出行日期：2026-07-02 · 2 成人</small></div><span class="status">待出行</span></div><div class="meta"><span>凭证已生成，请按使用说明出行</span><span class="price">¥998</span></div><div class="order-actions"><button data-route="travel-voucher" class="btn orange" onclick="navigate('travel-voucher')">查看凭证</button><button data-route="user-order-detail" class="btn ghost" onclick="navigate('user-order-detail')">查看详情</button></div></div>
+            <div class="order-card"><div class="order-head"><div><b>法瑞意经典四星跟团游</b><br><small>报名日期：2026-08-10 · 2 人</small></div><span class="status blue">退款/售后</span></div><div class="meta"><span>退款申请审核中</span><span class="price">¥25998</span></div><div class="order-actions"><button class="btn ghost" onclick="openDrawer('退款进度', '平台正在按境外供应商退改规则审核退款。')">查看进度</button></div></div>
+            <div class="tabbar"><button data-route="mini-home" onclick="navigate('mini-home')">首页</button><button data-route="destinations" onclick="navigate('destinations')">目的地</button><button class="active">订单</button><button data-route="profile" onclick="navigate('profile')">我的</button></div>
+          </div></div></div>
+          <div class="card"><h3>用户订单中心设计</h3><p>用户角色只看和自己相关的状态：待支付、待确认、待出行、已完成、退款/售后。每张卡片突出下一步提示，减少境外产品“支付后还要等确认”的焦虑。</p><table class="table"><tr><th>状态</th><th>用户可操作</th></tr><tr><td>待支付</td><td>去支付、取消订单</td></tr><tr><td>待确认</td><td>查看详情、联系客服、申请退款</td></tr><tr><td>待出行</td><td>查看凭证、查看详情、联系客服</td></tr><tr><td>退款/售后</td><td>查看退款进度、联系客服</td></tr></table></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-user-order-detail">
+        <div class="grid cols-2">
+          <div class="phone-wrap"><div class="phone"><div class="phone-top"><span>9:41</span><span>订单详情</span><span>···</span></div><div class="app-screen">
+            <div class="app-hero"><small>订单状态</small><h4>待确认</h4><p>平台正在确认境外供应商资源，确认后将发送电子凭证和出行通知。</p></div>
+            <div class="order-card"><b>东京迪士尼 1 日票 + 市区接送</b><div class="info-line"><span>出行日期</span><b>2026-06-18</b></div><div class="info-line"><span>出行人数</span><b>2 成人 1 儿童</b></div><div class="info-line"><span>目的地</span><b>日本 · 东京</b></div></div>
+            <h4>订单进度</h4><div class="progress"><div class="step done"><span class="dot">✓</span><div><b>已提交订单</b><small>订单编号 JP20260527001</small></div></div><div class="step done"><span class="dot">✓</span><div><b>已完成支付</b><small>微信支付 ¥2617</small></div></div><div class="step now"><span class="dot">●</span><div><b>资源确认中</b><small>预计 2 小时内完成</small></div></div><div class="step"><span class="dot">4</span><div><b>待发送凭证</b><small>PDF / 二维码 / 文本码</small></div></div><div class="step"><span class="dot">5</span><div><b>待出行</b><small>出行前发送提醒</small></div></div></div>
+            <div class="order-card"><b>游客信息</b><div class="info-line"><span>张三 / ZHANG SAN</span><b>E123****678</b></div><div class="info-line"><span>手机号</span><b>138****0000</b></div></div>
+            <div class="order-card"><b>费用信息</b><div class="info-line"><span>商品金额</span><b>¥2697</b></div><div class="info-line"><span>新人券</span><b>-¥80</b></div><div class="info-line"><span>实付金额</span><b class="price">¥2617</b></div></div>
+            <button data-route="travel-voucher" class="btn orange" style="width:100%" onclick="navigate('travel-voucher')">查看凭证</button><button class="btn ghost" style="width:100%;margin-top:10px" onclick="openDrawer('申请退款', '退款将按境外供应商退改规则人工审核，确认出票后可能产生扣费。')">申请退款</button>
+          </div></div></div>
+          <div class="card"><h3>订单详情页重点</h3><div class="ticket"><b>订单进度</b><small>让用户知道已支付、资源确认中、待发凭证、待出行。</small></div><div class="ticket"><b>游客资料</b><small>护照信息脱敏展示，避免用户反复询问。</small></div><div class="ticket"><b>费用和退改</b><small>展示商品金额、优惠、实付和退改规则入口。</small></div></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-travel-voucher">
+        <div class="grid cols-2">
+          <div class="phone-wrap"><div class="phone"><div class="phone-top"><span>9:41</span><span>出行凭证</span><span>保存</span></div><div class="app-screen">
+            <h3>出行凭证</h3><div class="order-card"><b>东京迪士尼 1 日票 + 市区接送</b><div class="meta"><span>出行日期：2026-06-18</span><span class="status">待出行</span></div></div>
+            <div class="voucher-box"><small>入园二维码</small><div class="qr"></div><b>凭证码：TYO-9A8K-2026</b><p>请在入园当天出示二维码，并携带护照原件。</p></div>
+            <div class="order-card"><b>使用说明</b><p>1. 当地时间 08:30 前到达新宿站西口集合点。<br>2. 请携带护照原件，儿童需随成人同行。<br>3. 如遇天气或交通变化，请以出团通知为准。</p></div>
+            <div class="order-card"><b>附件</b><div class="order-actions"><button class="btn ghost" onclick="openDrawer('PDF 确认单', '这里展示供应商 PDF 确认单预览或下载入口。')">查看 PDF 确认单</button><button class="btn ghost" onclick="showToast('凭证图片已保存')">保存图片</button></div></div>
+            <div class="order-card"><b>紧急联系</b><div class="info-line"><span>境外客服</span><b>+81-xxx-xxxx</b></div><div class="info-line"><span>中文客服</span><b>400-xxx-xxxx</b></div></div>
+            <div class="tabbar"><button data-route="mini-home" onclick="navigate('mini-home')">首页</button><button data-route="destinations" onclick="navigate('destinations')">目的地</button><button data-route="user-orders" class="active" onclick="navigate('user-orders')">订单</button><button data-route="profile" onclick="navigate('profile')">我的</button></div>
+          </div></div></div>
+          <div class="card"><h3>凭证页支持类型</h3><table class="table"><tr><th>凭证类型</th><th>展示方式</th></tr><tr><td>二维码</td><td>大图展示，支持保存图片</td></tr><tr><td>文本验证码</td><td>突出显示，方便复制或截图</td></tr><tr><td>PDF 确认单</td><td>查看/下载/转发</td></tr><tr><td>图片凭证</td><td>图册展示，支持保存</td></tr><tr><td>出团通知</td><td>集合时间、地点、联系人、注意事项</td></tr></table></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-order-detail">
+        <div class="metric-grid"><div class="metric"><small>订单状态</small><b id="orderStatus">待确认</b></div><div class="metric"><small>实付</small><b>¥2617</b></div><div class="metric"><small>成本</small><b>¥2180</b></div><div class="metric"><small>毛利</small><b>¥437</b></div></div>
+        <div class="kanban">
+          <div class="lane"><h4>待确认</h4><div class="ticket"><b>JP20260527001</b><small>东京迪士尼 1 日票 + 接送</small><br><button class="btn ghost" onclick="confirmOrder()">模拟资源确认</button></div></div>
+          <div class="lane"><h4>待发凭证</h4><div class="ticket"><b>供应商确认单</b><small>支持 PDF / 图片 / 二维码 / 文本码</small><br><button class="btn ghost" onclick="uploadVoucher()">模拟凭证上传</button></div></div>
+          <div class="lane"><h4>待出行</h4><div class="ticket"><b>出行提醒</b><small>出发前 1 天发送短信和小程序通知</small></div></div>
+          <div class="lane"><h4>售后</h4><div class="ticket"><b>退款审核</b><small>按供应商退改规则人工审核</small><br><button class="btn ghost" onclick="openDrawer('退款审核', '退款申请已进入人工审核，后台可记录供应商扣费和用户退款金额。')">处理</button></div></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-admin">
+        <div class="metric-grid"><div class="metric"><small>今日 GMV</small><b>¥86,420</b></div><div class="metric"><small>待确认订单</small><b>18</b></div><div class="metric"><small>待上传凭证</small><b>9</b></div><div class="metric"><small>毛利率</small><b>18.6%</b></div></div>
+        <div class="card"><h3>平台运营后台</h3><table class="table"><tr><th>菜单</th><th>功能</th><th>操作</th></tr><tr><td>境外产品</td><td>跟团、门票、玩乐、套餐、上下架</td><td><button data-route="admin-product-edit" class="btn ghost" onclick="navigate('admin-product-edit')">编辑</button></td></tr><tr><td>订单履约</td><td>确认资源、上传凭证、出团通知</td><td><button data-route="admin-order-detail" class="btn ghost" onclick="navigate('admin-order-detail')">处理</button></td></tr><tr><td>退款审核</td><td>退款原因、供应商扣费、用户退款金额</td><td><button data-route="refund-request" class="btn ghost" onclick="navigate('refund-request')">审核</button></td></tr></table><h3>后台页面地图</h3><div class="grid" style="grid-template-columns:repeat(2,1fr);gap:8px"><button data-route="admin-product-edit" class="pill" onclick="navigate('admin-product-edit')">后台商品编辑页</button><button data-route="admin-order-detail" class="pill" onclick="navigate('admin-order-detail')">后台订单详情页</button><button data-route="order-detail" class="pill" onclick="navigate('order-detail')">订单履约中心</button><button data-route="refund-request" class="pill" onclick="navigate('refund-request')">退款审核</button><button data-route="coupon-center" class="pill" onclick="navigate('coupon-center')">活动优惠券</button><button data-route="visa-materials" class="pill" onclick="navigate('visa-materials')">签证材料审核</button></div></div>
+      </section>
+
+      <section class="view" id="view-supplier">
+        <div class="grid cols-2"><div class="card"><h3>供应商工作台</h3><p>给境外资源商或合作方使用的轻量后台。首期可只开放订单查看、确认资源、上传凭证。</p><table class="table"><tr><th>订单</th><th>产品</th><th>动作</th></tr><tr><td>JP20260527001</td><td>东京迪士尼 1 日票 + 接送</td><td><button data-route="supplier-order-detail" class="btn ghost" onclick="navigate('supplier-order-detail')">查看详情</button></td></tr><tr><td>TH20260527009</td><td>普吉岛出海一日游</td><td><button class="btn ghost" onclick="uploadVoucher()">上传凭证</button></td></tr></table><h3>供应商页面地图</h3><button data-route="supplier-order-detail" class="pill" onclick="navigate('supplier-order-detail')">供应商订单详情页</button></div><div class="card"><h3>后续增强</h3><div class="ticket"><b>商品维护</b><small>供应商自己维护产品、价格、库存。</small></div><div class="ticket"><b>结算账单</b><small>按成本价生成账单，退款扣回。</small></div><div class="ticket"><b>接口对接</b><small>订单确认、出票、核销、退款状态自动同步。</small></div></div></div>
+      </section>
+
+
+      <section class="view" id="view-product-list">
+        <div class="grid cols-2"><div class="phone-wrap"><div class="phone"><div class="phone-top"><span>9:41</span><span>产品列表</span><span>筛选</span></div><div class="app-screen"><h3>产品列表页</h3><div class="search">东京 · 全部玩法</div><div class="order-tabs"><button class="pill active">全部</button><button class="pill">门票</button><button class="pill">一日游</button><button class="pill">包车</button><button class="pill">亲子</button></div><div class="order-card"><b>筛选排序</b><div class="dest-row"><button class="pill">日期</button><button class="pill">价格</button><button class="pill">玩法</button><button class="pill">中文服务</button><button class="pill">销量优先</button></div></div><div class="product" onclick="navigate('product-detail')"><div class="product-img">东京迪士尼 1 日票 + 接送</div><h5>东京亲子当地玩乐套餐</h5><div class="meta"><span>可订明日 · 已售 128</span><span class="price">¥899 起</span></div></div><div class="product"><div class="product-img" style="background:linear-gradient(135deg,#9bd3ff,#29493f)">富士山河口湖一日游</div><h5>富士山河口湖中文一日游</h5><div class="meta"><span>小团出行 · 中文司导</span><span class="price">¥499 起</span></div></div><div class="tabbar"><button data-route="mini-home" onclick="navigate('mini-home')">首页</button><button data-route="destinations" class="active" onclick="navigate('destinations')">目的地</button><button data-route="user-orders" onclick="navigate('user-orders')">订单</button><button data-route="profile" onclick="navigate('profile')">我的</button></div></div></div></div><div class="card"><h3>产品列表页</h3><p>承接目的地详情，支持筛选排序后进入产品详情。</p><button data-route="product-detail" class="btn" onclick="navigate('product-detail')">进入产品详情</button></div></div>
+      </section>
+
+      <section class="view" id="view-consultation">
+        <div class="grid cols-2"><div class="phone-wrap"><div class="phone"><div class="phone-top"><span>9:41</span><span>预约咨询</span><span>客服</span></div><div class="app-screen"><h3>预约咨询页</h3><div class="field"><label>目的地</label><input value="日本 · 东京/大阪"></div><div class="form-row"><div class="field"><label>出行日期</label><input value="2026-07-15"></div><div class="field"><label>人数</label><input value="2 成人 1 儿童"></div></div><div class="field"><label>预算</label><input value="2-3 万"></div><div class="field"><label>需求备注</label><input value="亲子、迪士尼、少走路、中文服务"></div><div class="field"><label>联系人</label><input value="13800000000"></div><button class="btn orange" style="width:100%;margin-top:12px" onclick="openDrawer('提交咨询', '咨询单已提交，客服将在 30 分钟内联系并生成报价单。')">提交咨询</button></div></div></div><div class="card"><h3>预约咨询页</h3><p>适合定制游、小包团、复杂行程，后续进入咨询记录/报价单。</p><button data-route="consultation-record" class="btn" onclick="navigate('consultation-record')">查看咨询记录</button></div></div>
+      </section>
+
+      <section class="view" id="view-traveler-docs">
+        <div class="grid cols-2"><div class="phone-wrap"><div class="phone"><div class="phone-top"><span>9:41</span><span>常用游客</span><span>新增</span></div><div class="app-screen"><h3>常用游客/护照资料</h3><div class="order-card"><b>张三 / ZHANG SAN</b><div class="info-line"><span>护照号</span><b>E123****678</b></div><div class="info-line"><span>有效期</span><b>2030-08-01</b></div><button class="btn ghost" style="width:100%">编辑</button></div><div class="field"><label>英文姓</label><input value="ZHANG"></div><div class="field"><label>英文名</label><input value="SAN"></div><div class="field"><label>国籍</label><input value="中国"></div><button class="btn orange" style="width:100%" onclick="openDrawer('新增游客', '已新增常用游客，下单时可自动带入护照资料。')">新增游客</button></div></div></div><div class="card"><h3>常用游客/护照资料</h3><p>维护中文名、英文姓/名、证件类型、护照号、有效期、出生日期和国籍。</p></div></div>
+      </section>
+
+      <section class="view" id="view-consultation-record">
+        <div class="grid cols-2"><div class="phone-wrap"><div class="phone"><div class="phone-top"><span>9:41</span><span>咨询记录</span><span>报价</span></div><div class="app-screen"><h3>咨询记录/报价单</h3><div class="order-card"><div class="order-head"><div><b>日本亲子 6 日游</b><br><small>客服跟进中 · 最近回复 10 分钟前</small></div><span class="status blue">已报价</span></div><p>东京 3 晚 + 大阪 2 晚，含迪士尼、环球影城、中文接送。</p><div class="info-line"><span>报价金额</span><b class="price">¥26800</b></div><button data-route="checkout" class="btn orange" style="width:100%" onclick="navigate('checkout')">确认报价并下单</button></div></div></div></div><div class="card"><h3>咨询记录/报价单</h3><p>客服报价后可转订单支付，适合非标境外线路。</p></div></div>
+      </section>
+
+      <section class="view" id="view-refund-request">
+        <div class="grid cols-2"><div class="phone-wrap"><div class="phone"><div class="phone-top"><span>9:41</span><span>申请退款</span><span>规则</span></div><div class="app-screen"><h3>退款申请页</h3><div class="order-card"><b>东京迪士尼 1 日票 + 接送</b><div class="info-line"><span>实付金额</span><b>¥2617</b></div><div class="info-line"><span>供应商扣费</span><b>¥200</b></div><div class="info-line"><span>可退金额</span><b class="price">¥2417</b></div></div><div class="field"><label>退款原因</label><select><option>行程变化</option><option>重复购买</option><option>资源未确认</option></select></div><div class="field"><label>退款说明</label><input value="计划调整，申请取消"></div><button class="btn orange" style="width:100%" onclick="openDrawer('退款申请页', '退款申请已提交，进入后台退款审核。')">提交退款申请</button></div></div></div><div class="card"><h3>退款申请页</h3><p>展示可退金额、供应商扣费、退款原因和审核提示。</p></div></div>
+      </section>
+
+      <section class="view" id="view-admin-product-edit">
+        <div class="card"><h3>后台商品编辑页</h3><div class="grid cols-2"><div><div class="field"><label>商品名称</label><input value="东京迪士尼 1 日票 + 市区接送"></div><div class="field"><label>目的地</label><input value="日本 · 东京"></div><div class="field"><label>费用包含</label><input value="门票、接送、中文客服"></div><div class="field"><label>退改规则</label><input value="出行前 3 天可退，出票后按供应商规则扣费"></div></div><div><div class="field"><label>成人价</label><input value="899"></div><div class="field"><label>儿童价</label><input value="699"></div><div class="field"><label>库存</label><input value="30"></div><div class="field"><label>凭证说明</label><input value="PDF / 二维码 / 文本码"></div></div></div><button class="btn orange" onclick="openDrawer('保存商品', '商品已保存，可进入审核和上架流程。')">保存商品</button></div>
+      </section>
+
+      <section class="view" id="view-admin-order-detail">
+        <div class="card"><h3>后台订单详情页</h3><table class="table"><tr><th>区域</th><th>内容</th><th>动作</th></tr><tr><td>订单信息</td><td>JP20260527001 · 待确认 · ¥2617</td><td><button class="btn ghost" onclick="confirmOrder()">确认资源</button></td></tr><tr><td>游客资料</td><td>ZHANG SAN · E123****678 · 2 成人 1 儿童</td><td><button class="btn ghost">导出名单</button></td></tr><tr><td>供应商</td><td>东京地接 A 社 · 成本 ¥2180</td><td><button class="btn ghost">记录备注</button></td></tr><tr><td>凭证</td><td>未上传</td><td><button class="btn ghost" onclick="uploadVoucher()">上传供应商凭证</button></td></tr></table></div>
+      </section>
+
+      <section class="view" id="view-supplier-order-detail">
+        <div class="card"><h3>供应商订单详情页</h3><div class="ticket"><b>订单 JP20260527001</b><small>东京迪士尼 1 日票 + 接送 · 2026-06-18 · 2 成人 1 儿童</small></div><div class="ticket"><b>游客名单</b><small>ZHANG SAN / E123****678；LI SI / E987****321。</small></div><button class="btn orange" onclick="openDrawer('确认可用资源', '供应商已确认可用资源，平台订单进入待上传凭证。')">确认可用资源</button><button class="btn ghost" onclick="uploadVoucher()">上传供应商凭证</button></div>
+      </section>
+
+      <section class="view" id="view-visa-materials">
+        <div class="grid cols-2"><div class="phone-wrap"><div class="phone"><div class="phone-top"><span>9:41</span><span>签证材料</span><span>上传</span></div><div class="app-screen"><h3>签证材料页</h3><div class="order-card"><b>日本旅游签材料</b><p>护照首页、证件照、身份证、户口本、在职证明、银行流水。</p></div><div class="field"><label>护照首页</label><input value="已上传 passport.jpg"></div><div class="field"><label>证件照</label><input value="未上传"></div><div class="field"><label>在职证明</label><input value="未上传"></div><button class="btn orange" style="width:100%" onclick="openDrawer('上传签证材料', '材料已提交，后台可审核并备注补充要求。')">上传签证材料</button></div></div></div><div class="card"><h3>签证材料页</h3><p>适合 D 版增强功能，首期可预留入口。</p></div></div>
+      </section>
+
+      <section class="view" id="view-coupon-center">
+        <div class="grid cols-2"><div class="phone-wrap"><div class="phone"><div class="phone-top"><span>9:41</span><span>优惠券</span><span>规则</span></div><div class="app-screen"><h3>活动/优惠券页</h3><div class="app-hero"><small>新人专享</small><h4>境外游券包</h4><p>下单可抵扣，提升首单转化。</p></div><div class="order-card"><div class="order-head"><div><b>新人境外游券</b><br><small>满 2000 减 100</small></div><span class="price">¥100</span></div><button class="btn orange" style="width:100%" onclick="showToast('领取成功')">立即领券</button></div><div class="order-card"><div class="order-head"><div><b>当地玩乐券</b><br><small>满 500 减 30</small></div><span class="price">¥30</span></div><button class="btn ghost" style="width:100%">立即领券</button></div></div></div></div><div class="card"><h3>活动/优惠券页</h3><p>展示新人券、品类券、目的地活动券，后续接下单试算。</p></div></div>
+      </section>
+
+      <section class="view" id="view-quote">
+        <div class="quote-grid"><div class="quote"><h3>A 线索版</h3><small>先验证咨询</small><div class="money">12-25 万</div><ul><li>产品展示</li><li>留资咨询</li><li>后台线索</li><li>无在线支付</li></ul></div><div class="quote featured"><h3>B 轻量交易版</h3><small>推荐首期</small><div class="money">30-50 万</div><ul><li>在线报名支付</li><li>后台人工确认</li><li>上传凭证</li><li>退款审核</li></ul><button class="btn orange" onclick="openDrawer('推荐 B 版', '适合控制在 35-45 万上线收款，先人工履约。')">选择 B</button></div><div class="quote"><h3>C 标准 MVP</h3><small>正式运营</small><div class="money">50-85 万</div><ul><li>四类产品闭环</li><li>优惠券</li><li>班期库存</li><li>基础报表</li></ul></div><div class="quote"><h3>D 增强版</h3><small>规模化</small><div class="money">85-130 万</div><ul><li>H5</li><li>签证材料</li><li>基础商家</li><li>财务增强</li></ul></div></div>
+      </section>
+    </main>
+  </div>
+
+  <div class="drawer" id="drawer"><div class="shade" onclick="closeDrawer()"></div><div class="drawer-panel"><button class="btn ghost" style="float:right" onclick="closeDrawer()">关闭</button><h2 id="drawerTitle">说明</h2><p id="drawerText"></p><div class="ticket"><b>可交互节点</b><small>当前原型支持菜单切换、详情跳转、下单支付、订单确认、上传凭证、弹窗说明。</small></div></div></div>
+  <div class="consumer-guide" id="consumerGuide">
+    <small class="status blue">消费者演示面板</small>
+    <h3 id="consumerStepTitle">第 1 步：浏览目的地</h3>
+    <p id="consumerStepDesc">你现在是消费者，从境外旅游首页开始挑选目的地。</p>
+    <div class="consumer-progress"><span id="consumerProgress"></span></div>
+    <div class="hero-actions">
+      <button class="btn orange" onclick="nextConsumerStep()">下一步</button>
+      <button class="btn ghost" onclick="closeConsumerDemo()">关闭演示</button>
+    </div>
+    <div class="consumer-steps" id="consumerSteps"></div>
+  </div>
+  <div class="toast" id="toast">已操作</div>
+
+  <script>
+    const titles = {
+      'overview': ['境外旅游系统总览', '把用户端、运营后台、供应商协同、订单履约和报价方案串成一套可点击原型。'],
+      'mini-home': ['境外旅游小程序', '模拟用户从首页浏览目的地和产品，点击产品可进入详情。'],
+      'destinations': ['目的地首页', '按国家城市和玩法主题发现境外旅游产品。'],
+      'destination-detail': ['目的地详情', '聚合目的地下的门票、玩乐、跟团和攻略。'],
+      'profile': ['我的首页', '用户资料、常用游客、护照资料、我的凭证、咨询记录和客服。'],
+      'product-detail': ['产品详情 / 报名', '展示境外产品详情、费用说明、确认方式和转化按钮。'],
+      'checkout': ['下单支付流程', '模拟填写游客护照资料、优惠试算和微信支付。'],
+      'user-orders': ['用户我的订单', '用户按状态查看自己的境外旅游订单、凭证和售后进度。'],
+      'user-order-detail': ['用户订单详情', '展示订单进度、游客信息、费用信息、退改和客服入口。'],
+      'travel-voucher': ['用户出行凭证', '展示二维码、文本码、PDF 确认单、使用说明和紧急联系。'],
+      'order-detail': ['订单履约中心', '模拟后台确认资源、上传凭证、处理退款审核。'],
+      'admin': ['平台运营后台', '运营维护商品、班期库存、游客名单、订单和退款。'],
+      'supplier': ['供应商工作台', '给境外资源商处理订单确认和凭证上传的轻量后台。'],
+      'product-list': ['产品列表页', '按目的地、日期、玩法、价格筛选排序后进入详情。'],
+      'consultation': ['预约咨询页', '提交目的地、日期、人数、预算和需求，客服跟进报价。'],
+      'traveler-docs': ['常用游客/护照资料', '维护常用游客和护照资料，下单自动带入。'],
+      'consultation-record': ['咨询记录/报价单', '查看客服方案和报价，可确认报价并下单。'],
+      'refund-request': ['退款申请页', '填写退款原因并查看可退金额和扣费提示。'],
+      'admin-product-edit': ['后台商品编辑页', '维护境外产品基础信息、价格库存、退改和凭证说明。'],
+      'admin-order-detail': ['后台订单详情页', '查看订单、游客、供应商、成本和凭证记录。'],
+      'supplier-order-detail': ['供应商订单详情页', '供应商确认资源并上传凭证。'],
+      'visa-materials': ['签证材料页', '上传护照、照片、在职证明等签证材料。'],
+      'coupon-center': ['活动/优惠券页', '领取新人券、品类券和目的地活动券。'],
+      'quote': ['报价方案', 'A/B/C/D 四档预算和首期推荐方案。']
+    };
+
+    function navigate(route) {
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.getElementById('view-' + route).classList.add('active');
+      document.querySelectorAll('[data-route]').forEach(b => b.classList.toggle('active', b.dataset.route === route));
+      document.getElementById('pageTitle').textContent = titles[route][0];
+      document.getElementById('pageDesc').textContent = titles[route][1];
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function openDrawer(title, text) {
+      document.getElementById('drawerTitle').textContent = title;
+      document.getElementById('drawerText').textContent = text;
+      document.getElementById('drawer').classList.add('open');
+    }
+
+    function closeDrawer() {
+      document.getElementById('drawer').classList.remove('open');
+    }
+
+    function showToast(text) {
+      const toast = document.getElementById('toast');
+      toast.textContent = text;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 1800);
+    }
+
+    function payOrder() {
+      navigate('user-order-detail');
+      showToast('支付成功：可在我的订单查看进度');
+    }
+
+    function confirmOrder() {
+      document.getElementById('orderStatus').textContent = '已确认';
+      showToast('资源已确认，等待上传凭证');
+    }
+
+    function uploadVoucher() {
+      document.getElementById('orderStatus').textContent = '待出行';
+      showToast('凭证已上传，用户可在小程序查看');
+    }
+
+
+    function setExperienceMode(mode) {
+      const map = { user: 'mini-home', admin: 'admin', supplier: 'supplier' };
+      navigate(map[mode] || 'overview');
+      showToast('已进入' + (mode === 'user' ? '用户端流程' : mode === 'admin' ? '运营端流程' : '供应商流程'));
+    }
+
+    function applyProductFilter(keyword) {
+      navigate('product-list');
+      showToast('筛选结果：' + keyword + '相关产品');
+    }
+
+    function fillDemoTraveler() {
+      navigate('checkout');
+      showToast('一键填入示例游客：ZHANG SAN / E123****678');
+    }
+
+    function resetPrototype() {
+      navigate('overview');
+      const status = document.getElementById('orderStatus');
+      if (status) status.textContent = '待确认';
+      showToast('重置体验完成');
+    }
+
+    const consumerDemoSteps = [
+      {
+        title: '第 1 步：浏览目的地',
+        route: 'mini-home',
+        desc: '你现在是消费者，从境外旅游首页开始挑选日本、东京、亲子玩法。',
+        toast: '我是消费者：先浏览境外目的地'
+      },
+      {
+        title: '第 2 步：查看产品列表',
+        route: 'product-list',
+        desc: '进入东京产品列表，筛选门票、一日游、亲子、中文服务等条件。',
+        toast: '筛选东京亲子当地玩乐产品'
+      },
+      {
+        title: '第 3 步：查看产品详情',
+        route: 'product-detail',
+        desc: '查看日期、价格、费用包含、退改规则和确认方式，决定报名。',
+        toast: '查看产品详情并准备报名'
+      },
+      {
+        title: '第 4 步：填写资料并支付',
+        route: 'checkout',
+        desc: '填写联系人、游客护照资料、优惠券，模拟微信支付提交订单。',
+        toast: '已填写资料并提交支付'
+      },
+      {
+        title: '第 5 步：查看我的订单',
+        route: 'user-order-detail',
+        desc: '支付后进入我的订单，看到订单状态为待确认，等待平台履约。',
+        toast: '系统正在确认资源'
+      },
+      {
+        title: '第 6 步：查看出行凭证',
+        route: 'travel-voucher',
+        desc: '供应商已上传凭证，消费者在订单内查看二维码、PDF、集合地点和紧急联系人。',
+        toast: '供应商已上传凭证，消费者体验完成'
+      }
+    ];
+    let consumerStepIndex = 0;
+    let consumerDemoStarted = false;
+
+    function renderConsumerStep() {
+      const guide = document.getElementById('consumerGuide');
+      const step = consumerDemoSteps[consumerStepIndex] || consumerDemoSteps[0];
+      document.getElementById('consumerStepTitle').textContent = step.title;
+      document.getElementById('consumerStepDesc').textContent = step.desc;
+      document.getElementById('consumerProgress').style.width = ((consumerStepIndex + 1) / consumerDemoSteps.length * 100) + '%';
+      document.getElementById('consumerSteps').innerHTML = consumerDemoSteps.map((item, index) => `
+        <button class="${index === consumerStepIndex ? 'active' : ''}" onclick="consumerStepIndex=${index}; renderConsumerStep(); navigate('${item.route}')">
+          <b>${item.title}</b><br><small>${item.desc}</small>
+        </button>
+      `).join('');
+      guide.classList.add('show');
+    }
+
+    function nextConsumerStep() {
+      if (!consumerDemoStarted) {
+        startConsumerDemo();
+        return;
+      }
+      const step = consumerDemoSteps[consumerStepIndex];
+      navigate(step.route);
+      renderConsumerStep();
+      showToast(step.toast);
+      if (step.title === '第 5 步：查看我的订单') {
+        setTimeout(() => showToast('供应商已上传凭证'), 900);
+      }
+      if (step.title === '第 6 步：查看出行凭证') {
+        setTimeout(() => showToast('消费者体验完成'), 900);
+      }
+      consumerStepIndex = Math.min(consumerStepIndex + 1, consumerDemoSteps.length - 1);
+    }
+
+    function startConsumerDemo() {
+      consumerDemoStarted = true;
+      consumerStepIndex = 0;
+      nextConsumerStep();
+    }
+
+    function closeConsumerDemo() {
+      consumerDemoStarted = false;
+      document.getElementById('consumerGuide').classList.remove('show');
+      showToast('已关闭消费者演示面板');
+    }
+
+    const guidedDemoSteps = [
+      { title: '浏览产品', route: 'product-list', desc: '用户从目的地进入产品列表，筛选东京亲子产品。' },
+      { title: '提交订单', route: 'checkout', desc: '用户填写游客护照资料并提交订单。' },
+      { title: '后台确认', route: 'admin-order-detail', desc: '运营在后台联系供应商并确认资源。' },
+      { title: '上传凭证', route: 'supplier-order-detail', desc: '供应商或运营上传二维码/PDF/文本码。' },
+      { title: '查看凭证', route: 'travel-voucher', desc: '用户在小程序订单内查看出行凭证。' }
+    ];
+    let guidedDemoIndex = 0;
+    let guidedDemoTimer = null;
+
+    function renderDemoStep() {
+      const box = document.getElementById('demoSteps');
+      if (!box) return;
+      box.innerHTML = guidedDemoSteps.map((step, index) => `
+        <button class="ticket" onclick="guidedDemoIndex=${index}; renderDemoStep(); navigate('${step.route}')">
+          <b>${index + 1}. ${step.title}</b>
+          <small>${step.desc}</small>
+        </button>
+      `).join('');
+      box.querySelectorAll('.ticket').forEach((item, index) => {
+        item.style.border = index === guidedDemoIndex ? '2px solid var(--orange)' : '1px solid var(--line)';
+      });
+    }
+
+    function nextDemoStep() {
+      const step = guidedDemoSteps[guidedDemoIndex % guidedDemoSteps.length];
+      navigate(step.route);
+      renderDemoStep();
+      showToast('演示步骤：' + step.title);
+      guidedDemoIndex = (guidedDemoIndex + 1) % guidedDemoSteps.length;
+    }
+
+    function startGuidedDemo() {
+      clearInterval(guidedDemoTimer);
+      guidedDemoIndex = 0;
+      nextDemoStep();
+      guidedDemoTimer = setInterval(() => {
+        nextDemoStep();
+        if (guidedDemoIndex === 0) clearInterval(guidedDemoTimer);
+      }, 1400);
+    }
+
+    renderDemoStep();
+
+    document.querySelectorAll('[data-route]').forEach(btn => btn.addEventListener('click', () => navigate(btn.dataset.route)));
+  </script>
+</body>
+</html>
